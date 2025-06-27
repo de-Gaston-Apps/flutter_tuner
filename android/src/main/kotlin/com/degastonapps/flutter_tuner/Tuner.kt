@@ -34,16 +34,16 @@ class Tuner(val callback: (Double) -> Unit) {
 
 
     private fun collectData(): ShortArray {
-            // Write the output audio in byte array
-            val sData = ShortArray(BUFFER_SIZE)
-            // Get the voice output from microphone
-            val shortsRead = recorder!!.read(sData, 0, BUFFER_SIZE)
+        // Write the input audio in byte array
+        val sData = ShortArray(BUFFER_SIZE)
+        // Get the voice input from microphone
+        val shortsRead = recorder!!.read(sData, 0, BUFFER_SIZE)
 
-            if (shortsRead < 0) {
-                Log.e(TAG, "collectData: Couldn't read from recorder! shortsRead=$shortsRead")
-            }
+        if (shortsRead < 0) {
+            Log.e(TAG, "collectData: Couldn't read from recorder! shortsRead=$shortsRead")
+        }
 
-            return sData
+        return sData
     }
 
     private fun findFrequency(sData: ShortArray): Double {
