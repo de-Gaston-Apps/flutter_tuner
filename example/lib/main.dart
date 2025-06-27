@@ -43,12 +43,13 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('Tuner')),
-        body: !_hasMicPermission
-            ? const Center(child: Text('Microphone permission is required.'))
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  StreamBuilder<double>(
+        body: Column(
+          children: [
+            !_hasMicPermission
+                ? const Center(
+                    child: Text('Microphone permission is required.'),
+                  )
+                : StreamBuilder<double>(
                     stream: _stream,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -63,32 +64,33 @@ class _MyAppState extends State<MyApp> {
                       );
                     },
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          flutterTuner.startTuning();
-                        },
-                        icon: const Icon(Icons.play_arrow),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          flutterTuner.stopTuning();
-                        },
-                        icon: const Icon(Icons.stop),
-                      ),
-                    ],
-                  ),
 
-                  IconButton(
-                    onPressed: () {
-                      _requestMicrophonePermission();
-                    },
-                    icon: const Icon(Icons.mic),
-                  ),
-                ],
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    flutterTuner.startTuning();
+                  },
+                  icon: const Icon(Icons.play_arrow),
+                ),
+                IconButton(
+                  onPressed: () {
+                    flutterTuner.stopTuning();
+                  },
+                  icon: const Icon(Icons.stop),
+                ),
+              ],
+            ),
+
+            IconButton(
+              onPressed: () {
+                _requestMicrophonePermission();
+              },
+              icon: const Icon(Icons.mic),
+            ),
+          ],
+        ),
       ),
     );
   }
