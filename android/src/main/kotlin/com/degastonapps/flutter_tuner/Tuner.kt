@@ -1,4 +1,4 @@
-package com.megaj.tunermain
+package com.degastonapps.flutter_tuner
 
 import android.annotation.SuppressLint
 import android.media.AudioFormat
@@ -7,7 +7,7 @@ import android.media.MediaRecorder
 import android.util.Log
 
 
-class Tuner(callback: (Double) -> Unit) {
+class Tuner(val callback: (Double) -> Unit) {
 
     companion object {
         const val TAG = "TUNER"
@@ -29,21 +29,8 @@ class Tuner(callback: (Double) -> Unit) {
 
     private var isRecording = false
     private var isTuning = false
-
     private var recorder: AudioRecord? = null
-
-    private var recordingThread = Thread({
-        while (isRecording) {
-            val sData = collectData()
-
-            val freq = findFrequency(sData)
-//            Log.d(TAG, "recordingThread: frequency=$freq")
-
-            callback(freq)
-        }
-
-    }, "recordingThread")
-
+    private var recordingThread: Thread? = null
 
 
     private fun collectData(): ShortArray {
@@ -157,29 +144,55 @@ class Tuner(callback: (Double) -> Unit) {
      */
     @SuppressLint("MissingPermission")
     fun start() {
+        if (isRecording) return // Already running, ignore
+
         Log.d(TAG, "start: Starting tuner")
+
         recorder = AudioRecord(
             MediaRecorder.AudioSource.MIC,
-            RECORDER_SAMPLE_RATE, RECORDER_CHANNELS,
-            RECORDER_AUDIO_ENCODING, BUFFER_SIZE * BYTES_PER_ELEMENT
+            RECORDER_SAMPLE_RATE,
+            RECORDER_CHANNELS,
+            RECORDER_AUDIO_ENCODING,
+            BUFFER_SIZE * BYTES_PER_ELEMENT
         )
+
         recorder?.startRecording()
         isRecording = true
-        recordingThread.start()
+
+        recordingThread = Thread({
+            while (isRecording) {
+                val sData = collectData()
+                val freq = findFrequency(sData)
+                callback(freq)
+            }
+        }, "recordingThread")
+
+        recordingThread?.start()
     }
 
     fun stop() {
-        isTuning = false
+        if (!isRecording) return // Already stopped, ignore
 
-        // stops the recording activity
-        if (recorder != null) {
-            isRecording = false
+        Log.d(TAG, "stop: Stopping tuner")
+        isTuning = false
+        isRecording = false
+
+        try {
             recorder?.stop()
             recorder?.release()
-            recorder = null
-            recordingThread.join()
-//            recordingThread.stop()
+        } catch (e: Exception) {
+            Log.e(TAG, "stop: Error stopping recorder", e)
         }
+
+        recorder = null
+
+        try {
+            recordingThread?.join()
+        } catch (e: InterruptedException) {
+            Log.e(TAG, "stop: Thread join interrupted", e)
+        }
+
+        recordingThread = null // Clear so a new one can be created
     }
 
 }

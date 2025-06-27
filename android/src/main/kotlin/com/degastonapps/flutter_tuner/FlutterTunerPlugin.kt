@@ -9,7 +9,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import kotlin.concurrent.fixedRateTimer
 
 class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
   private lateinit var methodChannel: MethodChannel
@@ -17,7 +16,17 @@ class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
   private val logTag = "Flutter_Tuner"
   private var eventSink: EventChannel.EventSink? = null
 
-  private var timer: java.util.Timer? = null
+
+  /*
+   * This is the function that gets called when the tuner frequency changes.
+   */
+  private val tunerCallback: (Double) -> Unit = { freq ->
+    Handler(Looper.getMainLooper()).post {
+      eventSink?.success(freq)
+    }
+  }
+
+  private val tuner = Tuner(tunerCallback)
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     methodChannel = MethodChannel(binding.binaryMessenger, "flutter_tuner")
@@ -50,25 +59,13 @@ class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
   }
 
   private fun startTuning() {
-    if (timer != null) return
-
-    timer = fixedRateTimer("tuner", initialDelay = 0, period = 300) {
-      val freq = generateFakeFrequency()
-      Handler(Looper.getMainLooper()).post {
-        eventSink?.success(freq)
-      }
-    }
+    tuner.start()
   }
 
   private fun stopTuning() {
-    timer?.cancel()
-    timer = null
+    tuner.stop()
   }
 
-  private fun generateFakeFrequency(): Double {
-    // Replace with real processing later
-    return 440.0 + Math.random() * 440.0
-  }
 
   override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
     eventSink = events
