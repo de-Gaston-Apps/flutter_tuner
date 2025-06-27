@@ -31,7 +31,6 @@ public class FlutterTunerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     }
   }
 
-
   private func startSendingFakeData() {
     stopSendingFakeData() // prevent multiple timers
 
