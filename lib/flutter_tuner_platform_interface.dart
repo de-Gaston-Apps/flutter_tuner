@@ -23,7 +23,18 @@ abstract class FlutterTunerPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
+  /// Start the native tuner.
+  Future<void> startTuning() {
+    throw UnimplementedError('startTuning() has not been implemented.');
+  }
+
+  /// Stop the native tuner.
+  Future<void> stopTuning() {
+    throw UnimplementedError('stopTuning() has not been implemented.');
+  }
+
+  /// Stream of frequency updates (in Hz).
+  Stream<double> get frequencyStream {
+    throw UnimplementedError('frequencyStream has not been implemented.');
   }
 }

@@ -28,3 +28,7 @@ flutter:
         pluginClass: FlutterTunerPlugin
       ios:
         pluginClass: FlutterTunerPlugin
+        sharedDarwinSource: true
+      macos:
+        pluginClass: FlutterTunerPlugin
+        sharedDarwinSource: true

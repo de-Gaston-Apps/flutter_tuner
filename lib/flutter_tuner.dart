@@ -8,7 +8,18 @@
 import 'flutter_tuner_platform_interface.dart';
 
 class FlutterTuner {
-  Future<String?> getPlatformVersion() {
-    return FlutterTunerPlatform.instance.getPlatformVersion();
+  /// Starts the frequency stream from the native platform.
+  Future<void> startTuning() {
+    return FlutterTunerPlatform.instance.startTuning();
+  }
+
+  /// Stops the frequency stream from the native platform.
+  Future<void> stopTuning() {
+    return FlutterTunerPlatform.instance.stopTuning();
+  }
+
+  /// Stream of frequency (in Hz) emitted by the native tuner.
+  Stream<double> get frequencyStream {
+    return FlutterTunerPlatform.instance.frequencyStream;
   }
 }

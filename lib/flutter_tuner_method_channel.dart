@@ -4,14 +4,20 @@ import 'package:flutter/services.dart';
 import 'flutter_tuner_platform_interface.dart';
 
 /// An implementation of [FlutterTunerPlatform] that uses method channels.
-class MethodChannelFlutterTuner extends FlutterTunerPlatform {
-  /// The method channel used to interact with the native platform.
+class MethodChannelFlutterTuner implements FlutterTunerPlatform {
   @visibleForTesting
-  final methodChannel = const MethodChannel('flutter_tuner');
+  static const methodChannel = MethodChannel('flutter_tuner');
+
+  @visibleForTesting
+  static const eventChannel = EventChannel('flutter_tuner_stream');
 
   @override
-  Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
-    return version;
-  }
+  Future<void> startTuning() => methodChannel.invokeMethod('startTuning');
+
+  @override
+  Future<void> stopTuning() => methodChannel.invokeMethod('stopTuning');
+
+  @override
+  Stream<double> get frequencyStream =>
+      eventChannel.receiveBroadcastStream().map((event) => event as double);
 }
