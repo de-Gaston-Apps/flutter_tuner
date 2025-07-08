@@ -3,7 +3,7 @@ import UIKit
 
 public class FlutterTunerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
   private var eventSink: FlutterEventSink?
-  private var timer: Timer?
+  private var tuner: Tuner?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let methodChannel = FlutterMethodChannel(name: "flutter_tuner", binaryMessenger: registrar.messenger())
@@ -15,34 +15,32 @@ public class FlutterTunerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    do {
-      switch call.method {
-      case "startTuning":
-        startSendingFakeData()
-        result(nil)
-      case "stopTuning":
-        stopSendingFakeData()
-        result(nil)
-      default:
-        result(FlutterMethodNotImplemented)
+    switch call.method {
+    case "startTuning":
+      startTuning()
+      result(nil)
+    case "stopTuning":
+      stopTuning()
+      result(nil)
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func startTuning() {
+    guard tuner == nil else { return } // prevent multiple tuners
+
+    tuner = Tuner { [weak self] frequency in
+      DispatchQueue.main.async {
+        self?.eventSink?(frequency)
       }
-    } catch {
-      result(FlutterError(code: "PLUGIN_ERROR", message: "Failed to handle method: \(call.method)", details: error.localizedDescription))
     }
+    tuner?.start()
   }
 
-  private func startSendingFakeData() {
-    stopSendingFakeData() // prevent multiple timers
-
-    timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-      let fakeFrequency = 440.0 + Double.random(in: -3...3)
-      self.eventSink?(fakeFrequency)
-    }
-  }
-
-  private func stopSendingFakeData() {
-    timer?.invalidate()
-    timer = nil
+  private func stopTuning() {
+    tuner?.stop()
+    tuner = nil
   }
 
   public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
@@ -51,7 +49,7 @@ public class FlutterTunerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
   }
 
   public func onCancel(withArguments arguments: Any?) -> FlutterError? {
-    stopSendingFakeData()
+    stopTuning()
     self.eventSink = nil
     return nil
   }
