@@ -3,7 +3,7 @@ import AVFoundation
 
 class Tuner {
     static let sampleRate: Double = 44100
-    static let bufferSize = Int(sampleRate / 3)
+    static let bufferSize = 4096
     static let bytesPerElement = 2
     static let minSignalLen = Int(sampleRate / 4)
     static let attenuation = 0.80
@@ -19,13 +19,14 @@ class Tuner {
         self.callback = callback
     }
 
-    func start() {
+    func start() throws {
         guard !isRunning else { return }
         isRunning = true
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.inputFormat(forBus: 0)
         let frameCount = UInt32(Tuner.bufferSize)
+
 
         inputNode.installTap(onBus: 0, bufferSize: frameCount, format: format) { (buffer, time) in
             guard self.isRunning else { return }
@@ -54,7 +55,7 @@ class Tuner {
         }
     }
 
-    func stop() {
+    func stop() throws {
         guard isRunning else { return }
         isRunning = false
         audioEngine.inputNode.removeTap(onBus: 0)

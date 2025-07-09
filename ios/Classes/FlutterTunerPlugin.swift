@@ -13,43 +13,56 @@ public class FlutterTunerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     registrar.addMethodCallDelegate(instance, channel: methodChannel)
     eventChannel.setStreamHandler(instance)
   }
+    
 
-  public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    switch call.method {
-    case "startTuning":
-      startTuning()
-      result(nil)
-    case "stopTuning":
-      stopTuning()
-      result(nil)
-    default:
-      result(FlutterMethodNotImplemented)
-    }
-  }
-
-  private func startTuning() {
-    guard tuner == nil else { return } // prevent multiple tuners
-
-    tuner = Tuner { [weak self] frequency in
-      DispatchQueue.main.async {
-        self?.eventSink?(frequency)
+    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+      do {
+        switch call.method {
+        case "startTuning":
+          try startTuning()
+          result(nil)
+        case "stopTuning":
+          try stopTuning()
+          result(nil)
+        default:
+          result(FlutterMethodNotImplemented)
+        }
+      } catch {
+        result(FlutterError(code: "TUNER_ERROR", message: error.localizedDescription, details: nil))
       }
     }
-    tuner?.start()
-  }
 
-  private func stopTuning() {
-    tuner?.stop()
-    tuner = nil
-  }
+    private func startTuning() throws {
+      guard tuner == nil else { return } // prevent multiple tuners
 
+      tuner = Tuner { [weak self] frequency in
+        DispatchQueue.main.async {
+          self?.eventSink?(frequency)
+        }
+      }
+
+      try tuner?.start()
+    }
+
+    private func stopTuning() throws {
+      try tuner?.stop()
+      tuner = nil
+    }
+    
+    
   public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
     self.eventSink = events
     return nil
   }
 
   public func onCancel(withArguments arguments: Any?) -> FlutterError? {
-    stopTuning()
+      do {
+          try stopTuning()
+      }
+      catch {
+          // Nothing to do here
+      }
+      
     self.eventSink = nil
     return nil
   }
