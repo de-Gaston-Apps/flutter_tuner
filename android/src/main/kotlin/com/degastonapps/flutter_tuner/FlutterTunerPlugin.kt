@@ -26,7 +26,8 @@ class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
     }
   }
 
-  private val tuner = Tuner(tunerCallback)
+//  private val tuner = Tuner(tunerCallback)
+  private val tuner = TunerNew(tunerCallback)
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     methodChannel = MethodChannel(binding.binaryMessenger, "flutter_tuner")
