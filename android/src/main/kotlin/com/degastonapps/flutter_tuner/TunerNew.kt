@@ -140,7 +140,7 @@ class TunerNew(val callback: (Double) -> Unit) {
         }
 
         if (!foundSignal) {
-            Log.d(TAG, "TOO QUIET! avgPower=$avgPower")
+//            Log.d(TAG, "TOO QUIET! avgPower=$avgPower")
             return TOO_QUIET_FREQ
         }
 
