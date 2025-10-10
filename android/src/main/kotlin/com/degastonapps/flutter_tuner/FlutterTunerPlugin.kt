@@ -1,8 +1,12 @@
 package com.degastonapps.flutter_tuner
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -13,6 +17,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
   private lateinit var methodChannel: MethodChannel
   private lateinit var eventChannel: EventChannel
+  private lateinit var context: Context
   private val logTag = "Flutter_Tuner"
   private var eventSink: EventChannel.EventSink? = null
 
@@ -30,6 +35,7 @@ class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
   private val tuner = TunerNew(tunerCallback)
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+    context = binding.applicationContext
     methodChannel = MethodChannel(binding.binaryMessenger, "flutter_tuner")
     eventChannel = EventChannel(binding.binaryMessenger, "flutter_tuner_stream")
 
@@ -41,6 +47,10 @@ class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
       try {
           when (call.method) {
             "startTuning" -> {
+              if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                result.error("401", "Microphone permission not granted", null)
+                return
+              }
               startTuning()
               result.success(null)
             }
