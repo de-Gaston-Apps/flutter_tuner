@@ -292,7 +292,7 @@ private fun fft(input: Array<Complex>): Array<Complex> {
     val n = input.size
     if (n == 1) return arrayOf(input[0])
 
-    if (n % 2 != 0) throw IllegalArgumentException("FFT input length must be power of 2")
+    if (n == 0 || (n and (n - 1) != 0)) throw IllegalArgumentException("FFT input length must be a power of 2")
 
     val even = fft(Array(n / 2) { input[2 * it] })
     val odd = fft(Array(n / 2) { input[2 * it + 1] })
