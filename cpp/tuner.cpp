@@ -10,7 +10,7 @@
 
 TunerCPP::TunerCPP(int sampleRate, int bufferSize) : sampleRate(sampleRate), bufferSize(bufferSize) {}
 
-TunerCPP::~TunerCPP() {}
+TunerCPP::~TunerCPP() = default;
 
 double TunerCPP::findFrequency(const std::vector<double>& audioData) {
     if (audioData.size() < bufferSize) {
@@ -153,50 +153,39 @@ std::vector<double> TunerCPP::parabolic(const std::vector<double>& y, int i) {
     return {trueI, value};
 }
 
-void TunerCPP::fft(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output) {
+void fftRecursive(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output) {
     int n = input.size();
-    if (n <= 1) {
-        if (n == 1) {
-            output[0] = input[0];
-        }
+    if (n == 1) {
+        output[0] = input[0];
         return;
     }
-
-    if ((n & (n - 1)) != 0) {
-        throw std::runtime_error("FFT input size must be a power of 2");
+    if (n % 2 != 0) {
+        throw std::runtime_error("FFT input length must be power of 2");
     }
 
-    // Bit-reversal permutation
-    for (int i = 0; i < n; i++) {
-        int j = 0;
-        int temp_i = i;
-        for (int k = 0; k < log2(n); k++) {
-            j = (j << 1) | (temp_i & 1);
-            temp_i >>= 1;
-        }
-        if (j > i) {
-            output[i] = input[j];
-            output[j] = input[i];
-        } else {
-            output[i] = input[i];
-        }
+    std::vector<std::complex<double>> even(n / 2), odd(n / 2);
+    for (int i = 0; i < n / 2; i++) {
+        even[i] = input[2 * i];
+        odd[i] = input[2 * i + 1];
     }
 
-    // Cooley-Tukey FFT
-    for (int len = 2; len <= n; len <<= 1) {
-        double angle = -2.0 * M_PI / len;
-        std::complex<double> wlen = std::polar(1.0, angle);
-        for (int i = 0; i < n; i += len) {
-            std::complex<double> w(1);
-            for (int j = 0; j < len / 2; j++) {
-                std::complex<double> u = output[i + j];
-                std::complex<double> v = output[i + j + len / 2] * w;
-                output[i + j] = u + v;
-                output[i + j + len / 2] = u - v;
-                w *= wlen;
-            }
-        }
+    std::vector<std::complex<double>> fftEven(n / 2), fftOdd(n / 2);
+    fftRecursive(even, fftEven);
+    fftRecursive(odd, fftOdd);
+
+    for (int k = 0; k < n / 2; k++) {
+        double angle = -2.0 * M_PI * k / n;
+        std::complex<double> wk(cos(angle), sin(angle));
+        std::complex<double> t = wk * fftOdd[k];
+        output[k] = fftEven[k] + t;
+        output[k + n / 2] = fftEven[k] - t;
     }
+}
+
+void TunerCPP::fft(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output) {
+    if (input.empty()) return;
+    output.resize(input.size());
+    fftRecursive(input, output);
 }
 
 int TunerCPP::scorePowers(const std::vector<double>& powers, const std::vector<int>& peaks) {

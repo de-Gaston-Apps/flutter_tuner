@@ -7,7 +7,7 @@ struct Tuner {
 };
 
 Tuner* create_tuner(int sample_rate, int buffer_size) {
-    Tuner* tuner = new Tuner;
+    auto* tuner = new Tuner;
     tuner->instance = new TunerCPP(sample_rate, buffer_size);
     return tuner;
 }

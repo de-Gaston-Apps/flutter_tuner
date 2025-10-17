@@ -5,20 +5,20 @@
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_degastonapps_flutter_tuner_TunerNew_createTunerJNI(JNIEnv *env, jobject thiz, jint sample_rate, jint buffer_size) {
-    TunerCPP* tuner = new TunerCPP(sample_rate, buffer_size);
+Java_com_degastonapps_flutter_1tuner_Tuner_createTunerJNI(JNIEnv *env, jobject thiz, jint sample_rate, jint buffer_size) {
+    auto* tuner = new TunerCPP(sample_rate, buffer_size);
     return reinterpret_cast<jlong>(tuner);
 }
 
 JNIEXPORT void JNICALL
-Java_com_degastonapps_flutter_tuner_TunerNew_destroyTunerJNI(JNIEnv *env, jobject thiz, jlong tuner_ptr) {
-    TunerCPP* tuner = reinterpret_cast<TunerCPP*>(tuner_ptr);
+Java_com_degastonapps_flutter_1tuner_Tuner_destroyTunerJNI(JNIEnv *env, jobject thiz, jlong tuner_ptr) {
+    auto* tuner = reinterpret_cast<TunerCPP*>(tuner_ptr);
     delete tuner;
 }
 
 JNIEXPORT jdouble JNICALL
-Java_com_degastonapps_flutter_tuner_TunerNew_findFrequencyJNI(JNIEnv *env, jobject thiz, jlong tuner_ptr, jdoubleArray audio_data) {
-    TunerCPP* tuner = reinterpret_cast<TunerCPP*>(tuner_ptr);
+Java_com_degastonapps_flutter_1tuner_Tuner_findFrequencyJNI(JNIEnv *env, jobject thiz, jlong tuner_ptr, jdoubleArray audio_data) {
+    auto* tuner = reinterpret_cast<TunerCPP*>(tuner_ptr);
     if (!tuner) {
         return -1.0;
     }
