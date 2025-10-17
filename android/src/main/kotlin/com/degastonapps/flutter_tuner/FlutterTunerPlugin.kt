@@ -32,7 +32,7 @@ class FlutterTunerPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
   }
 
 //  private val tuner = Tuner(tunerCallback)
-  private val tuner = TunerNew(tunerCallback)
+  private val tuner = Tuner(tunerCallback)
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     context = binding.applicationContext
