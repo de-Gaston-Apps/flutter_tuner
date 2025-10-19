@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.degastonapps.flutter_tuner_example"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "29.0.13113456 rc1"
+    ndkVersion = "29.0.13113456"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
