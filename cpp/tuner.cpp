@@ -146,7 +146,12 @@ std::vector<double> TunerCPP::parabolic(const std::vector<double>& y, int i) {
     double beta = y[idx];
     double gamma = y[idx + 1];
 
-    double p = 0.5 * (alpha - gamma) / (alpha - 2.0 * beta + gamma);
+    double denominator = alpha - 2.0 * beta + gamma;
+    if (std::abs(denominator) < 1e-6) {
+        return {static_cast<double>(idx), beta};
+    }
+
+    double p = 0.5 * (alpha - gamma) / denominator;
     double trueI = idx + p;
     double value = beta - 0.25 * (alpha - gamma) * p;
 
