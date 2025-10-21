@@ -1,24 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 project(flutter_tuner_native)
 
-# build library
-add_library(tuner STATIC
-            tuner.cpp
-            jni_bridge.cpp
-            tuner_wrapper.cpp)
+# Define a list of common source files that are always included.
+set(TUNER_LIB_SOURCES
+    tuner.cpp
+    tuner_wrapper.cpp)
+
+# Conditionally add the JNI bridge source file only when building for Android.
+if(ANDROID)
+    list(APPEND TUNER_LIB_SOURCES jni_bridge.cpp)
+endif()
+
+# Build the static library from the source files.
+add_library(tuner STATIC ${TUNER_LIB_SOURCES})
 
 target_include_directories(tuner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# When building for host (e.g. for tests), we need to find JNI.
-# When building for Android, the NDK provides JNI headers automatically.
-if(NOT ANDROID)
-    find_package(JNI REQUIRED)
-    if (JNI_FOUND)
-        target_include_directories(tuner PUBLIC ${JNI_INCLUDE_DIRS})
-    endif()
-endif()
-
-# GoogleTest (FetchContent)
+# GoogleTest (FetchContent) - for running host-side tests
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -26,7 +24,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# tests
+# Define the test executable and link it against the tuner library and gtest.
 add_executable(tuner_tests tests/test_tuner.cpp)
 target_link_libraries(tuner_tests PRIVATE tuner gtest_main)
 enable_testing()
