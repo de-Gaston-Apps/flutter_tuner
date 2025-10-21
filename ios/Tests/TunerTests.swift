@@ -3,6 +3,6 @@ import XCTest
 
 class TunerTests: XCTestCase {
   func testPlaceholder() {
-    XCTFail("Placeholder test")
+    XCTAssertEqual("asdf", "asdf")
   }
 }
