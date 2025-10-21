@@ -1,14 +1,14 @@
-cmake_minimum_required(VERSION 3.10)
-project(flutter_tuner_native)
+cmake_minimum_required(VERSION 3.13)
+project(flutter_tuner LANGUAGES C CXX)
 
 # Find JNI
 find_package(JNI REQUIRED)
 
 # build library
 add_library(tuner STATIC
-            tuner.cpp
-            jni_bridge.cpp
-            tuner_wrapper.cpp)
+        tuner.cpp
+        jni_bridge.cpp
+        tuner_wrapper.cpp)
 
 target_include_directories(tuner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${JNI_INCLUDE_DIRS})
 
@@ -25,3 +25,4 @@ add_executable(tuner_tests tests/test_tuner.cpp)
 target_link_libraries(tuner_tests PRIVATE tuner gtest_main)
 enable_testing()
 add_test(NAME tuner_tests COMMAND tuner_tests)
+
