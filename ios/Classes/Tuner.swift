@@ -8,7 +8,7 @@ class Tuner {
     private var audioEngine = AVAudioEngine()
     private let callback: (Double) -> Void
     private var isRunning = false
-    private var tuner: OpaquePointer?
+    private var tuner: TunerWrapper?
     private var sampleRate: Double = 0.0
 
     init(callback: @escaping (Double) -> Void) {
@@ -23,7 +23,7 @@ class Tuner {
         let format = inputNode.inputFormat(forBus: 0)
         sampleRate = format.sampleRate
 
-        tuner = create_tuner(Int32(sampleRate), Int32(Tuner.bufferSize))
+        tuner = TunerWrapper(sampleRate: Int32(sampleRate), bufferSize: Int32(Tuner.bufferSize))
 
         inputNode.installTap(onBus: 0, bufferSize: UInt32(Tuner.bufferSize), format: format) { (buffer, time) in
             guard self.isRunning, let tuner = self.tuner else { return }
@@ -41,7 +41,7 @@ class Tuner {
                 doubleData[i] = Double(data[i])
             }
 
-            let frequency = find_frequency(tuner, doubleData, Int32(frameLength))
+            let frequency = tuner.findFrequency(doubleData, dataSize: Int32(frameLength))
             self.callback(frequency)
         }
 
@@ -55,10 +55,7 @@ class Tuner {
     func stop() throws {
         guard isRunning else { return }
         isRunning = false
-        if let tuner = tuner {
-            destroy_tuner(tuner)
-            self.tuner = nil
-        }
+        tuner = nil
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
     }
