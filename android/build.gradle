@@ -50,6 +50,8 @@ android {
 
     externalNativeBuild {
         cmake {
+            // This located in the ios folder because Apple is stupid and can't build anything from
+            //  outside of it's ios/ folder. Believe me, I've tried. For hours.
             path "../ios/Classes/cpp/CMakeLists.txt"
         }
     }
