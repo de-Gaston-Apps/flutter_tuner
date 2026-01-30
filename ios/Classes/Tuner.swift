@@ -2,8 +2,11 @@ import Foundation
 import AVFoundation
 
 class Tuner {
-    static let bufferSize = 4096
+    static let bufferSize = 1024
     static let errorFrequency = -1.0
+    
+    private let fftSize = 4096
+    private var fftBuffer = [Double]()
 
     private var audioEngine = AVAudioEngine()
     private let callback: (Double) -> Void
@@ -17,39 +20,77 @@ class Tuner {
 
     func start() throws {
         guard !isRunning else { return }
-        isRunning = true
 
+        // 1. Audio session FIRST
+        let session = AVAudioSession.sharedInstance()
+
+        try session.setCategory(
+            .record,
+            mode: .measurement,
+            options: [.allowBluetooth]
+        )
+
+        try session.setPreferredSampleRate(44100)
+        try session.setActive(true)
+
+        // 2. Engine setup
         let inputNode = audioEngine.inputNode
-        let format = inputNode.inputFormat(forBus: 0)
-        sampleRate = format.sampleRate
 
-        tuner = create_tuner(Int32(sampleRate), Int32(Tuner.bufferSize))
+        // 3. Start engine BEFORE querying format
+        try audioEngine.start()
 
-        inputNode.installTap(onBus: 0, bufferSize: UInt32(Tuner.bufferSize), format: format) { (buffer, time) in
-            guard self.isRunning, let tuner = self.tuner else { return }
+        // 4. Now the hardware format is valid
+        let hwFormat = inputNode.inputFormat(forBus: 0)
 
-            let channelData = buffer.floatChannelData?[0]
-            let frameLength = Int(buffer.frameLength)
+        guard hwFormat.sampleRate > 0, hwFormat.channelCount > 0 else {
+            throw NSError(domain: "Tuner", code: -1)
+        }
 
-            guard let data = channelData else {
+        sampleRate = hwFormat.sampleRate
+        
+        tuner = create_tuner(
+            Int32(sampleRate),
+            Int32(Tuner.bufferSize)
+        )
+
+        // 5. Install tap with format = nil
+        inputNode.installTap(
+            onBus: 0,
+            bufferSize: AVAudioFrameCount(Tuner.bufferSize),
+            format: nil
+        ) { [weak self] buffer, _ in
+            guard
+                let self = self,
+                self.isRunning,
+                let tuner = self.tuner
+            else { return }
+
+            guard let channelData = buffer.floatChannelData?[0] else {
                 self.callback(Tuner.errorFrequency)
                 return
             }
 
-            var doubleData = [Double](repeating: 0.0, count: frameLength)
+            let frameLength = Int(buffer.frameLength)
+
             for i in 0..<frameLength {
-                doubleData[i] = Double(data[i])
+                fftBuffer.append(Double(channelData[i]))
             }
 
-            let frequency = find_frequency(tuner, doubleData, Int32(frameLength))
-            self.callback(frequency)
+            while fftBuffer.count >= fftSize {
+                let window = Array(fftBuffer.prefix(fftSize))
+                fftBuffer.removeFirst(fftSize)
+
+                let frequency = find_frequency(
+                    tuner,
+                    window,
+                    Int32(fftSize)
+                )
+
+                callback(frequency)
+            }
         }
 
-        do {
-            try audioEngine.start()
-        } catch {
-            callback(Tuner.errorFrequency)
-        }
+        isRunning = true
     }
 
     func stop() throws {
