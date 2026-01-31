@@ -1,5 +1,5 @@
 #import "TunerBridge.h"
-#import "tuner_wrapper.h" // This comes from your ../cpp folder
+#import "cpp/tuner_wrapper.h" // This comes from your ../cpp folder
 
 @interface TunerBridge ()
 // This is the "Class Extension" - it needs the Interface above to exist first

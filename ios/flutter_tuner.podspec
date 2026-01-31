@@ -16,7 +16,7 @@ A new Flutter plugin project.
 
   # This tells CocoaPods where the files live relative to the podspec
   s.source_files = 'Classes/**/*'
-  s.exclude_files = 'Classes/jni_bridge.cpp'
+  s.exclude_files = 'Classes/cpp/jni_bridge.cpp', 'Classes/cpp/CMakeLists.txt'
 
   s.dependency 'Flutter'
   s.platform = :ios, '12.0'

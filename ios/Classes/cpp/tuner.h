@@ -1,6 +1,7 @@
 #ifndef TUNER_H
 #define TUNER_H
 
+#ifdef __cplusplus
 #include <vector>
 #include <complex>
 
@@ -38,4 +39,5 @@ private:
     int scorePowers(const std::vector<double>& powers, const std::vector<int>& peaks);
 };
 
+#endif // __cplusplus
 #endif // TUNER_H
