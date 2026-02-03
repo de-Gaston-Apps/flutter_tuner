@@ -7,8 +7,15 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 class MockFlutterTunerPlatform
     with MockPlatformInterfaceMixin
     implements FlutterTunerPlatform {
+
   @override
-  Future<String?> getPlatformVersion() => Future.value('42');
+  Future<void> startTuning() => Future.value();
+
+  @override
+  Future<void> stopTuning() => Future.value();
+
+  @override
+  Stream<double> get frequencyStream => Stream.value(440.0);
 }
 
 void main() {
@@ -18,11 +25,11 @@ void main() {
     expect(initialPlatform, isInstanceOf<MethodChannelFlutterTuner>());
   });
 
-  test('getPlatformVersion', () async {
+  test('startTuning', () async {
     FlutterTuner flutterTunerPlugin = FlutterTuner();
     MockFlutterTunerPlatform fakePlatform = MockFlutterTunerPlatform();
     FlutterTunerPlatform.instance = fakePlatform;
 
-    expect(await flutterTunerPlugin.getPlatformVersion(), '42');
+    await flutterTunerPlugin.startTuning();
   });
 }
