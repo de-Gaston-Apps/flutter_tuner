@@ -25,9 +25,9 @@ class Tuner {
         let session = AVAudioSession.sharedInstance()
 
         try session.setCategory(
-            .record,
+            .playAndRecord,
             mode: .measurement,
-            options: [.allowBluetooth]
+            options: [.allowBluetooth, .defaultToSpeaker, .mixWithOthers]
         )
 
         try session.setPreferredSampleRate(44100)
