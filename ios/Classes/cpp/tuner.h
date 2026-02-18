@@ -28,6 +28,13 @@ private:
     int sampleRate;
     int bufferSize;
 
+    // Dynamic noise floor and smoothing
+    double dynamicNoiseFloor;
+    std::vector<double> frequencyHistory;
+    static constexpr double NOISE_FLOOR_ALPHA = 0.95;
+    static constexpr double DYNAMIC_NOISE_THRESHOLD = 30.0;
+    static const size_t MAX_HISTORY = 5;
+
     // DSP functions
     std::vector<double> hamming(int length);
     std::vector<std::complex<double>> rfft(const std::vector<double>& data);

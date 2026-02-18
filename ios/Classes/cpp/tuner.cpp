@@ -8,7 +8,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-TunerCPP::TunerCPP(int sampleRate, int bufferSize) : sampleRate(sampleRate), bufferSize(bufferSize) {}
+TunerCPP::TunerCPP(int sampleRate, int bufferSize)
+    : sampleRate(sampleRate), bufferSize(bufferSize), dynamicNoiseFloor(-1.0) {}
 
 TunerCPP::~TunerCPP() = default;
 
@@ -46,6 +47,19 @@ double TunerCPP::findFrequency(const std::vector<double>& audioData) {
         windowsCalculated++;
     }
 
+    // Dynamic Noise Floor: use median as a robust estimate of the noise floor
+    // This adapts to the ambient noise level over time.
+    std::vector<double> sortedPowers = powers;
+    auto medianIt = sortedPowers.begin() + sortedPowers.size() / 2;
+    std::nth_element(sortedPowers.begin(), medianIt, sortedPowers.end());
+    double medianPower = *medianIt;
+
+    if (dynamicNoiseFloor < 0) {
+        dynamicNoiseFloor = medianPower;
+    } else {
+        dynamicNoiseFloor = NOISE_FLOOR_ALPHA * dynamicNoiseFloor + (1.0 - NOISE_FLOOR_ALPHA) * medianPower;
+    }
+
     bool foundSignal = false;
     double avgPower = mean(powers);
 
@@ -67,7 +81,10 @@ double TunerCPP::findFrequency(const std::vector<double>& audioData) {
             if (powers[j] > tmpMax && is_peak) {
                 tmpIdx = j;
                 tmpMax = powers[j];
-                if (tmpMax > avgPower * NOISE_SENSE_VERY_HIGH) {
+                // Check against both current average and historical dynamic noise floor
+                // for better stability in noisy environments.
+                if (tmpMax > avgPower * NOISE_SENSE_VERY_HIGH &&
+                    tmpMax > dynamicNoiseFloor * DYNAMIC_NOISE_THRESHOLD) {
                     foundSignal = true;
                 }
             }
@@ -76,6 +93,7 @@ double TunerCPP::findFrequency(const std::vector<double>& audioData) {
     }
 
     if (!foundSignal) {
+        frequencyHistory.clear(); // Reset smoothing history when it's too quiet
         return -2.0; // TOO_QUIET_FREQ
     }
 
@@ -89,7 +107,18 @@ double TunerCPP::findFrequency(const std::vector<double>& audioData) {
     double newFreq = sampleRate * trueI / windowLength;
     if (newFreq < 0.0) return -1.0;
 
-    return newFreq;
+    // Apply median filter to smooth out frequency jumps (twitching)
+    frequencyHistory.push_back(newFreq);
+    if (frequencyHistory.size() > MAX_HISTORY) {
+        frequencyHistory.erase(frequencyHistory.begin());
+    }
+
+    std::vector<double> sortedHistory = frequencyHistory;
+    auto historyMedianIt = sortedHistory.begin() + sortedHistory.size() / 2;
+    std::nth_element(sortedHistory.begin(), historyMedianIt, sortedHistory.end());
+
+    // Return the median value of the recent frequencies
+    return *historyMedianIt;
 }
 
 std::vector<double> TunerCPP::hamming(int length) {

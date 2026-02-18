@@ -7,3 +7,6 @@ add_library(tuner SHARED
         tuner_wrapper.cpp)
 
 target_include_directories(tuner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(tuner_test tuner_test.cpp tuner.cpp)
+target_include_directories(tuner_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
