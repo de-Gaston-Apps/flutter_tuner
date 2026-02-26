@@ -8,9 +8,54 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-TunerCPP::TunerCPP(int sampleRate, int bufferSize) : sampleRate(sampleRate), bufferSize(bufferSize) {}
+TunerCPP::TunerCPP(int sampleRate, int bufferSize)
+    : sampleRate(sampleRate), bufferSize(bufferSize), circularBuffer(bufferSize, 0.0), writeIndex(0), isFull(false) {}
 
 TunerCPP::~TunerCPP() = default;
+
+void TunerCPP::pushData(const double* data, int length) {
+    if (length >= bufferSize) {
+        // If the incoming data is larger than our buffer, just take the last part
+        std::copy(data + length - bufferSize, data + length, circularBuffer.begin());
+        writeIndex = 0;
+        isFull = true;
+        return;
+    }
+
+    int spaceToEnd = bufferSize - writeIndex;
+    if (length <= spaceToEnd) {
+        std::copy(data, data + length, circularBuffer.begin() + writeIndex);
+        writeIndex += length;
+    } else {
+        std::copy(data, data + spaceToEnd, circularBuffer.begin() + writeIndex);
+        std::copy(data + spaceToEnd, data + length, circularBuffer.begin());
+        writeIndex = length - spaceToEnd;
+        isFull = true;
+    }
+    if (writeIndex == bufferSize) {
+        writeIndex = 0;
+        isFull = true;
+    }
+}
+
+double TunerCPP::findFrequency() {
+    if (!isFull && writeIndex < bufferSize) {
+        return -1.0; // Not enough data
+    }
+
+    std::vector<double> audioData(bufferSize);
+    if (!isFull) {
+        // This case is actually covered by writeIndex < bufferSize check above,
+        // but for completeness if writeIndex == bufferSize:
+        std::copy(circularBuffer.begin(), circularBuffer.begin() + writeIndex, audioData.begin());
+    } else {
+        // isFull is true, extract in order: [writeIndex ... end] followed by [0 ... writeIndex-1]
+        std::copy(circularBuffer.begin() + writeIndex, circularBuffer.end(), audioData.begin());
+        std::copy(circularBuffer.begin(), circularBuffer.begin() + writeIndex, audioData.begin() + (bufferSize - writeIndex));
+    }
+
+    return findFrequency(audioData);
+}
 
 double TunerCPP::findFrequency(const std::vector<double>& audioData) {
     if (audioData.size() < bufferSize) {

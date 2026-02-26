@@ -5,8 +5,7 @@ class Tuner {
     static let bufferSize = 1024
     static let errorFrequency = -1.0
     
-    private let fftSize = 4096
-    private var fftBuffer = [Double]()
+    private let analysisSize = 4096
 
     private var audioEngine = AVAudioEngine()
     private let callback: (Double) -> Void
@@ -50,7 +49,7 @@ class Tuner {
         
         tuner = create_tuner(
             Int32(sampleRate),
-            Int32(Tuner.bufferSize)
+            Int32(analysisSize)
         )
 
         // 5. Install tap with format = nil
@@ -71,22 +70,13 @@ class Tuner {
             }
 
             let frameLength = Int(buffer.frameLength)
+            let doubleData = (0..<frameLength).map { Double(channelData[$0]) }
 
-            for i in 0..<frameLength {
-                fftBuffer.append(Double(channelData[i]))
-            }
+            tuner_push_data(tuner, doubleData, Int32(frameLength))
+            let frequency = tuner_analyze(tuner)
 
-            while fftBuffer.count >= fftSize {
-                let window = Array(fftBuffer.prefix(fftSize))
-                fftBuffer.removeFirst(fftSize)
-
-                let frequency = find_frequency(
-                    tuner,
-                    window,
-                    Int32(fftSize)
-                )
-
-                callback(frequency)
+            if frequency != -1.0 { // -1.0 means not enough data
+                self.callback(frequency)
             }
         }
 

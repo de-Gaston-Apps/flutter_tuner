@@ -11,6 +11,8 @@ typedef struct Tuner Tuner;
 Tuner* create_tuner(int sample_rate, int buffer_size);
 void destroy_tuner(Tuner* tuner);
 double find_frequency(Tuner* tuner, const double* audio_data, int data_size);
+void tuner_push_data(Tuner* tuner, const double* data, int length);
+double tuner_analyze(Tuner* tuner);
 
 #ifdef __cplusplus
 }

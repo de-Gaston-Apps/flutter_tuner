@@ -21,3 +21,11 @@ double find_frequency(Tuner* tuner, const double* audio_data, int data_size) {
     std::vector<double> audio_data_vec(audio_data, audio_data + data_size);
     return tuner->instance->findFrequency(audio_data_vec);
 }
+
+void tuner_push_data(Tuner* tuner, const double* data, int length) {
+    tuner->instance->pushData(data, length);
+}
+
+double tuner_analyze(Tuner* tuner) {
+    return tuner->instance->findFrequency();
+}
