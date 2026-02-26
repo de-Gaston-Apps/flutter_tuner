@@ -10,6 +10,8 @@ public:
     TunerCPP(int sampleRate, int bufferSize);
     ~TunerCPP();
 
+    void pushData(const double* data, int length);
+    double findFrequency();
     double findFrequency(const std::vector<double>& audioData);
 
 private:
@@ -27,6 +29,9 @@ private:
     // Member variables
     int sampleRate;
     int bufferSize;
+    std::vector<double> circularBuffer;
+    int writeIndex;
+    bool isFull;
 
     // DSP functions
     std::vector<double> hamming(int length);

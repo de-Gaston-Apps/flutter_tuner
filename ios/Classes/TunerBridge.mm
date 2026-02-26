@@ -16,6 +16,16 @@
     return self;
 }
 
+- (void)pushData:(const double *)data length:(int)length {
+    if (!_handle) return;
+    tuner_push_data(_handle, data, length);
+}
+
+- (double)findFrequency {
+    if (!_handle) return -1.0;
+    return tuner_analyze(_handle);
+}
+
 - (double)findFrequency:(const double *)data length:(int)length {
     if (!_handle) return -1.0;
     return find_frequency(_handle, data, length);
