@@ -30,13 +30,12 @@ private:
 
     // DSP functions
     std::vector<double> hamming(int length);
-    std::vector<std::complex<double>> rfft(const std::vector<double>& data);
+    std::vector<std::complex<double>> rfft(const std::vector<double>& data, int fftSize);
     std::vector<double> arrayComplexAbs(const std::vector<std::complex<double>>& complex);
     double mean(const std::vector<double>& arr);
     std::vector<double> arrayLog(const std::vector<double>& arr);
     std::vector<double> parabolic(const std::vector<double>& y, int i);
     void fft(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output);
-    int scorePowers(const std::vector<double>& powers, const std::vector<int>& peaks);
 };
 
 #endif // __cplusplus

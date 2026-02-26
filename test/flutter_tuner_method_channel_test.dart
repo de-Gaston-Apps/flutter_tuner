@@ -12,7 +12,14 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       channel,
       (MethodCall methodCall) async {
-        return '42';
+        switch (methodCall.method) {
+          case 'startTuning':
+            return null;
+          case 'stopTuning':
+            return null;
+          default:
+            return null;
+        }
       },
     );
   });
@@ -21,7 +28,11 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
   });
 
-  test('getPlatformVersion', () async {
-    expect(await platform.getPlatformVersion(), '42');
+  test('startTuning', () async {
+    await platform.startTuning();
+  });
+
+  test('stopTuning', () async {
+    await platform.stopTuning();
   });
 }
