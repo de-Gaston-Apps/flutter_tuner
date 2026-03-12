@@ -52,6 +52,7 @@ class _MyAppState extends State<MyApp> {
                 : StreamBuilder<double>(
                     stream: _stream,
                     builder: (context, snapshot) {
+                      print(snapshot.data);
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Text('Listening...');
                       }
