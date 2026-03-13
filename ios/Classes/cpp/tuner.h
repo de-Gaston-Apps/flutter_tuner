@@ -8,7 +8,7 @@
 // Wrap the C library header for C++ compatibility
 extern "C"
 {
-#include "src/Yin.h"
+#include "Yin.h"
 }
 
 class TunerCPP

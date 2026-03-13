@@ -43,3 +43,4 @@ float Yin_getPitch(Yin *yin, int16_t *buffer);
 float Yin_getProbability(Yin *yin);
 
 #endif
+
