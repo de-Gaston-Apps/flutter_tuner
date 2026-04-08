@@ -19,6 +19,9 @@ class Tuner {
     }
 
     func start() throws {
+        if AVAudioSession.sharedInstance().recordPermission != .granted {
+            throw NSError(domain: "Tuner", code: 0, userInfo: [NSLocalizedDescriptionKey: "Microphone permission not granted"])
+        }
         guard !isRunning else { return }
 
         // 1. Audio session FIRST
@@ -94,6 +97,9 @@ class Tuner {
     }
 
     func stop() throws {
+        if AVAudioSession.sharedInstance().recordPermission != .granted {
+            throw NSError(domain: "Tuner", code: 0, userInfo: [NSLocalizedDescriptionKey: "Microphone permission not granted"])
+        }
         guard isRunning else { return }
         isRunning = false
         if let tuner = tuner {
