@@ -26,7 +26,7 @@ class Tuner {
 
         try session.setCategory(
             .playAndRecord,
-            mode: .measurement,
+            mode: .voiceChat,
             options: [.allowBluetooth, .defaultToSpeaker, .mixWithOthers]
         )
 
