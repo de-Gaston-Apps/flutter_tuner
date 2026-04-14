@@ -15,6 +15,9 @@
     if (self) {
         // Instantiate the C++ class directly
         cppTuner = new TunerCPP(sampleRate, bufferSize);
+        if (!cppTuner) {
+            NSLog(@"[TunerBridge] Failed to allocate TunerCPP");
+        }
     }
     return self;
 }
