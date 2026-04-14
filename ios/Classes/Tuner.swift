@@ -59,9 +59,11 @@ class Tuner {
 
         sampleRate = hwFormat.sampleRate
 
+        // IMPORTANT: Initialize native tuner with the actual analysis window size (fftSize),
+        // because we pass fftSize samples to find_frequency below.
         tuner = create_tuner(
             Int32(sampleRate),
-            Int32(Tuner.bufferSize)
+            Int32(fftSize)
         )
 
         // 5. Install tap with format = nil
@@ -77,27 +79,27 @@ class Tuner {
             else { return }
 
             guard let channelData = buffer.floatChannelData?[0] else {
-                callback(Tuner.errorFrequency)
+                self.callback(Tuner.errorFrequency)
                 return
             }
 
             let frameLength = Int(buffer.frameLength)
 
             for i in 0..<frameLength {
-                fftBuffer.append(Double(channelData[i]))
+                self.fftBuffer.append(Double(channelData[i]))
             }
 
-            while fftBuffer.count >= fftSize {
-                let window = Array(fftBuffer.prefix(fftSize))
-                fftBuffer.removeFirst(fftSize)
+            while self.fftBuffer.count >= self.fftSize {
+                let window = Array(self.fftBuffer.prefix(self.fftSize))
+                self.fftBuffer.removeFirst(self.fftSize)
 
                 let frequency = find_frequency(
                     tuner,
                     window,
-                    Int32(fftSize)
+                    Int32(self.fftSize)
                 )
 
-                callback(frequency)
+                self.callback(frequency)
             }
         }
 
