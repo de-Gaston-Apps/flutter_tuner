@@ -91,7 +91,6 @@
 #include <cmath>
 
 TunerCPP::TunerCPP(int sampleRate, int bufferSize)
-    : sampleRate(sampleRate)
 {
     // Create the standalone YinFFT instance
     // Note: ensure your tuner.h defines tunerPtr as pitch_yinfft_t* // or use a void pointer and cast it.

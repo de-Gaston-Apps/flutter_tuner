@@ -31,9 +31,6 @@ public:
     double findFrequency(const std::vector<double> &audioData);
 
 private:
-    int sampleRate;
-    int bufferSize;
-
     // Opaque pointer to the C pitch detector instance
     pitch_yinfft_t *tunerPtr;
 
