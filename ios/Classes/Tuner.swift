@@ -2,10 +2,17 @@ import AVFoundation
 import Foundation
 
 class Tuner {
-    static let bufferSize = 1024
+    // Define a chunk size and how many chunks per FFT.
+    // Adjust these two to tune latency vs. frequency resolution.
+    private static let chunksPerFFT = 4        // FFT window spans this many chunks
+    private static let chunkSize = 1024        // Tap chunk size in frames
+
+    // Derived constants
+    static let bufferSize: Int = chunkSize
+    static let fftSize: Int = chunksPerFFT * chunkSize
+
     static let errorFrequency = -1.0
 
-    private let fftSize = 4096
     private var fftBuffer = [Double]()
 
     private var audioEngine = AVAudioEngine()
@@ -31,7 +38,10 @@ class Tuner {
                 throw NSError(domain: "Tuner", code: 0, userInfo: [NSLocalizedDescriptionKey: "Microphone permission not granted"])
             }
         }
-        
+
+        // Sanity check: enforce fftSize is a multiple of bufferSize
+        precondition(Tuner.fftSize % Tuner.bufferSize == 0, "fftSize must be a multiple of bufferSize")
+
         // 1. Audio session FIRST
         let session = AVAudioSession.sharedInstance()
 
@@ -59,11 +69,10 @@ class Tuner {
 
         sampleRate = hwFormat.sampleRate
 
-        // IMPORTANT: Initialize native tuner with the actual analysis window size (fftSize),
-        // because we pass fftSize samples to find_frequency below.
+        // Initialize native tuner with the actual analysis window size (fftSize)
         tuner = create_tuner(
             Int32(sampleRate),
-            Int32(fftSize)
+            Int32(Tuner.fftSize)
         )
 
         // 5. Install tap with format = nil
@@ -89,14 +98,14 @@ class Tuner {
                 self.fftBuffer.append(Double(channelData[i]))
             }
 
-            while self.fftBuffer.count >= self.fftSize {
-                let window = Array(self.fftBuffer.prefix(self.fftSize))
-                self.fftBuffer.removeFirst(self.fftSize)
+            while self.fftBuffer.count >= Tuner.fftSize {
+                let window = Array(self.fftBuffer.prefix(Tuner.fftSize))
+                self.fftBuffer.removeFirst(Tuner.fftSize)
 
                 let frequency = find_frequency(
                     tuner,
                     window,
-                    Int32(self.fftSize)
+                    Int32(Tuner.fftSize)
                 )
 
                 self.callback(frequency)
