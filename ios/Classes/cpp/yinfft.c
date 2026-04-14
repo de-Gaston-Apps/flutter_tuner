@@ -85,7 +85,6 @@ pitch_yinfft_t *new_pitch_yinfft(int samplerate, int bufsize) {
     
     // Validate bufsize is a power of 2 and at least 4
     if (!is_power_of_two_and_valid(bufsize)) {
-        assert(0 && "bufsize must be a power of 2 and >= 4");
         return NULL;
     }
     
