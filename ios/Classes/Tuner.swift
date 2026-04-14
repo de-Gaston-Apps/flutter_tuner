@@ -11,6 +11,11 @@ class Tuner {
     static let bufferSize: Int = chunkSize
     static let fftSize: Int = chunksPerFFT * chunkSize
 
+    // Cap the buffered samples to avoid unbounded growth if producer outpaces consumer.
+    // Keep at most this many FFT windows worth of samples.
+    private static let maxBufferedWindows = 4
+    private static let maxBufferSamples = fftSize * maxBufferedWindows
+
     static let errorFrequency = -1.0
 
     private var fftBuffer = [Double]()
@@ -94,10 +99,22 @@ class Tuner {
 
             let frameLength = Int(buffer.frameLength)
 
+            // Append new samples
             for i in 0..<frameLength {
                 self.fftBuffer.append(Double(channelData[i]))
             }
 
+            // Cap growth: if buffer exceeds maxBufferSamples, drop oldest samples
+            if self.fftBuffer.count > Tuner.maxBufferSamples {
+                // Keep at least one FFT window to allow immediate processing
+                let targetCount = max(Tuner.fftSize, Tuner.maxBufferSamples)
+                let dropCount = self.fftBuffer.count - targetCount
+                if dropCount > 0 {
+                    self.fftBuffer.removeFirst(dropCount)
+                }
+            }
+
+            // Process as many full windows as are available
             while self.fftBuffer.count >= Tuner.fftSize {
                 let window = Array(self.fftBuffer.prefix(Tuner.fftSize))
                 self.fftBuffer.removeFirst(Tuner.fftSize)
