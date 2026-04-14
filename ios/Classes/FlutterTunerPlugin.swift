@@ -35,12 +35,17 @@ public class FlutterTunerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             default:
                 result(FlutterMethodNotImplemented)
             }
-        } catch {
+        } catch let error as NSError {
             result(
                 FlutterError(
                     code: "TUNER_ERROR",
                     message: error.localizedDescription,
-                    details: nil
+                    details: [
+                        "description": error.description,
+                        "domain": error.domain,
+                        "code": error.code,
+                        "userInfo": "\(error.userInfo)"
+                    ]
                 )
             )
         }
