@@ -20,10 +20,10 @@ class Tuner {
 
     private var fftBuffer = [Double]()
 
+    private var tunerBridge: TunerBridge?
     private var audioEngine = AVAudioEngine()
     private let callback: (Double) -> Void
     private var isRunning = false
-    private var tuner: OpaquePointer?
     private var sampleRate: Double = 0.0
 
     // Synchronization for tap callback vs. stop()/teardown
@@ -78,9 +78,9 @@ class Tuner {
         sampleRate = hwFormat.sampleRate
 
         // Initialize native tuner with the actual analysis window size (fftSize)
-        tuner = create_tuner(
-            Int32(sampleRate),
-            Int32(Tuner.fftSize)
+        self.tunerBridge = TunerBridge(
+            sampleRate: Int32(sampleRate),
+            bufferSize: Int32(Tuner.fftSize)
         )
 
         // 5. Install tap with format = nil
@@ -95,7 +95,7 @@ class Tuner {
             self.tapLock.lock()
             defer { self.tapLock.unlock() }
 
-            guard self.isRunning, let tuner = self.tuner else {
+            guard self.isRunning, let bridge = self.tunerBridge else {
                 return
             }
 
@@ -126,13 +126,12 @@ class Tuner {
                 let window = Array(self.fftBuffer.prefix(Tuner.fftSize))
                 self.fftBuffer.removeFirst(Tuner.fftSize)
 
-                let frequency = find_frequency(
-                    tuner,
+                let frequency = self.tunerBridge?.findFrequency(
                     window,
-                    Int32(Tuner.fftSize)
+                    length: Int32(Tuner.fftSize)
                 )
 
-                self.callback(frequency)
+                self.callback(frequency ?? Tuner.errorFrequency)
             }
         }
 
@@ -140,16 +139,16 @@ class Tuner {
     }
 
     func stop() throws {
-        // Synchronize teardown with tap callback
-        tapLock.lock()
-        isRunning = false
-        if let tuner = tuner {
-            destroy_tuner(tuner)
-            self.tuner = nil
-        }
-        tapLock.unlock()
-
+        // Remove the tap FIRST so no more data comes in
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
+
+        tapLock.lock()
+        isRunning = false
+        tunerBridge?.dispose()
+        tunerBridge = nil
+        tapLock.unlock()
+
+        fftBuffer.removeAll()
     }
 }

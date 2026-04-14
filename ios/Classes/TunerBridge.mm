@@ -24,6 +24,7 @@
 
 - (double)findFrequency:(const double *)data length:(int)length {
     if (!cppTuner) {
+        NSLog(@"[TunerBridge::findFrequency] cppTuner was null");
         return -1.0;
     }
 
