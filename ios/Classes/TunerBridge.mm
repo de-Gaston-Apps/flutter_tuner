@@ -1,9 +1,11 @@
 #import "TunerBridge.h"
-#import "cpp/tuner_wrapper.h" // This comes from your ../cpp folder
+#import "tuner.h" // Your new TunerCPP header
+#import <vector>
 
-@interface TunerBridge ()
-// This is the "Class Extension" - it needs the Interface above to exist first
-@property(nonatomic) Tuner *handle;
+@interface TunerBridge () {
+    // We use a raw pointer to the C++ class here
+    TunerCPP *cppTuner;
+}
 @end
 
 @implementation TunerBridge
@@ -11,26 +13,35 @@
 - (instancetype)initWithSampleRate:(int)sampleRate bufferSize:(int)bufferSize {
     self = [super init];
     if (self) {
-        _handle = create_tuner(sampleRate, bufferSize);
+        // Instantiate the C++ class directly
+        cppTuner = new TunerCPP(sampleRate, bufferSize);
     }
     return self;
 }
 
 - (double)findFrequency:(const double *)data length:(int)length {
-    if (!_handle) {
+    if (!cppTuner) {
         return -1.0;
     }
-    return find_frequency(_handle, data, length);
+
+    // Convert the raw double array from Swift/Objective-C into a std::vector
+    // The C++ side expects a std::vector<double>
+    std::vector<double> audioVector(data, data + length);
+
+    // Call the C++ method
+    return cppTuner->findFrequency(audioVector);
 }
 
 - (void)dispose {
-    if (_handle) {
-        destroy_tuner(_handle);
-        _handle = NULL;
+    if (cppTuner) {
+        // Standard C++ cleanup
+        delete cppTuner;
+        cppTuner = nullptr;
     }
 }
 
 - (void)dealloc {
+    // Ensure cleanup happens even if dispose wasn't called manually
     [self dispose];
 }
 
