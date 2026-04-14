@@ -39,7 +39,7 @@ public class FlutterTunerPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             result(
                 FlutterError(
                     code: "TUNER_ERROR",
-                    message: error.localizedDescription,
+                    message: "Error with method call: \(call.method). Description: \(error.localizedDescription)",
                     details: [
                         "description": error.description,
                         "domain": error.domain,
