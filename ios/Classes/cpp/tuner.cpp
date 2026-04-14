@@ -80,6 +80,6 @@ double TunerCPP::findFrequency(const std::vector<double> &audioData)
 
     // 4. Adjust for Sample Rate Scaling
     // The Yin library often hardcodes 44100 into its pitch calculation.
-    // We scale it so it remains perfectly accurate on 48000Hz Android mics.
+    // We scale it so it remains perfectly accurate on 48000Hz mics.
     return rawPitch * (static_cast<double>(sampleRate) / 44100.0);
 }

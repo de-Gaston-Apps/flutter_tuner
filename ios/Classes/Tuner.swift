@@ -1,10 +1,10 @@
-import Foundation
 import AVFoundation
+import Foundation
 
 class Tuner {
     static let bufferSize = 1024
     static let errorFrequency = -1.0
-    
+
     private let fftSize = 4096
     private var fftBuffer = [Double]()
 
@@ -30,7 +30,7 @@ class Tuner {
         try session.setCategory(
             .playAndRecord,
             mode: .voiceChat,
-            options: [.allowBluetooth, .defaultToSpeaker, .mixWithOthers]
+            options: [.defaultToSpeaker, .duckOthers]
         )
 
         try session.setPreferredSampleRate(44100)
@@ -50,7 +50,7 @@ class Tuner {
         }
 
         sampleRate = hwFormat.sampleRate
-        
+
         tuner = create_tuner(
             Int32(sampleRate),
             Int32(Tuner.bufferSize)
@@ -69,7 +69,7 @@ class Tuner {
             else { return }
 
             guard let channelData = buffer.floatChannelData?[0] else {
-                self.callback(Tuner.errorFrequency)
+                callback(Tuner.errorFrequency)
                 return
             }
 

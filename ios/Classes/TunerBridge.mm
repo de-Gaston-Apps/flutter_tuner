@@ -3,7 +3,7 @@
 
 @interface TunerBridge ()
 // This is the "Class Extension" - it needs the Interface above to exist first
-@property (nonatomic) Tuner* handle; 
+@property(nonatomic) Tuner *handle;
 @end
 
 @implementation TunerBridge
@@ -17,7 +17,9 @@
 }
 
 - (double)findFrequency:(const double *)data length:(int)length {
-    if (!_handle) return -1.0;
+    if (!_handle) {
+        return -1.0;
+    }
     return find_frequency(_handle, data, length);
 }
 
