@@ -26,6 +26,9 @@ class Tuner {
     private var tuner: OpaquePointer?
     private var sampleRate: Double = 0.0
 
+    // Synchronization for tap callback vs. stop()/teardown
+    private let tapLock = NSLock()
+
     init(callback: @escaping (Double) -> Void) {
         self.callback = callback
     }
@@ -86,11 +89,15 @@ class Tuner {
             bufferSize: AVAudioFrameCount(Tuner.bufferSize),
             format: nil
         ) { [weak self] buffer, _ in
-            guard
-                let self = self,
-                self.isRunning,
-                let tuner = self.tuner
-            else { return }
+            guard let self = self else { return }
+
+            // Synchronize access to isRunning and tuner
+            self.tapLock.lock()
+            defer { self.tapLock.unlock() }
+
+            guard self.isRunning, let tuner = self.tuner else {
+                return
+            }
 
             guard let channelData = buffer.floatChannelData?[0] else {
                 self.callback(Tuner.errorFrequency)
@@ -133,12 +140,15 @@ class Tuner {
     }
 
     func stop() throws {
-        guard isRunning else { return }
+        // Synchronize teardown with tap callback
+        tapLock.lock()
         isRunning = false
         if let tuner = tuner {
             destroy_tuner(tuner)
             self.tuner = nil
         }
+        tapLock.unlock()
+
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
     }
