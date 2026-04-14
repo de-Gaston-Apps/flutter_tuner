@@ -11,6 +11,10 @@
 
 #define PI 3.14159265358979323846
 
+static int is_power_of_two_and_valid(int n) {
+    return (n >= 4) && ((n & (n - 1)) == 0);
+}
+
 struct _pitch_yinfft_t {
     int samplerate;
     int bufsize;
@@ -27,6 +31,7 @@ struct _pitch_yinfft_t {
 };
 
 // --- Psychoacoustic Weighting Constants from your source ---
+//       DON'T FORGET THE SENTINEL VALUE '-1' at the end
 static const float freqs_map[] = {0., 20., 25., 31.5, 40., 50., 63., 80., 100., 125., 160., 200., 250., 315., 400., 500., 630., 800., 1000., 1250., 1600., 2000., 2500., 3150., 4000., 5000., 6300., 8000., 9000., 10000., 12500., 15000., 20000., 25100., -1.};
 static const float weight_map[] = {-75.8, -70.1, -60.8, -52.1, -44.2, -37.5, -31.3, -25.6, -20.9, -16.5, -12.6, -9.60, -7.00, -4.70, -3.00, -1.80, -0.80, -0.20, -0.00, 0.50, 1.60, 3.20, 5.40, 7.80, 8.10, 5.30, -2.40, -11.1, -12.8, -12.2, -7.40, -17.8, -17.8, -17.8};
 
@@ -75,7 +80,19 @@ static void simple_fft(float *real, float *imag, int n) {
 }
 
 pitch_yinfft_t *new_pitch_yinfft(int samplerate, int bufsize) {
+    // Make sure samplerate is valid
+    if (samplerate <= 0) return NULL;
+    
+    // Validate bufsize is a power of 2 and at least 4
+    if (!is_power_of_two_and_valid(bufsize)) {
+        assert(0 && "bufsize must be a power of 2 and >= 4");
+        return NULL;
+    }
+    
+    // Check the struct allocation before dereferencing
     pitch_yinfft_t *p = (pitch_yinfft_t *)calloc(1, sizeof(pitch_yinfft_t));
+    if (!p) return NULL;
+    
     p->samplerate = samplerate;
     p->bufsize = bufsize;
     p->winput = (float *)calloc(bufsize, sizeof(float));
@@ -85,6 +102,14 @@ pitch_yinfft_t *new_pitch_yinfft(int samplerate, int bufsize) {
     p->fft_imag = (float *)calloc(bufsize, sizeof(float));
     p->win = (float *)calloc(bufsize, sizeof(float));
     p->weight = (float *)calloc(bufsize / 2 + 1, sizeof(float));
+    
+    // Check for partial allocation and cleanup if necessary
+    if (!p->winput || !p->sqrmag || !p->yinfft ||
+        !p->fft_real || !p->fft_imag || !p->win || !p->weight) {
+        del_pitch_yinfft(p);
+        return NULL;
+    }
+    
     p->tol = 0.85f;
 
     // Hanning Window
@@ -106,6 +131,8 @@ pitch_yinfft_t *new_pitch_yinfft(int samplerate, int bufsize) {
 }
 
 float pitch_yinfft_do(pitch_yinfft_t *p, const float *input) {
+    if (!p || !input) return 0.0f;
+    
     int n = p->bufsize;
     float sum = 0, tmp = 0;
 
@@ -149,21 +176,24 @@ float pitch_yinfft_do(pitch_yinfft_t *p, const float *input) {
     }
 
     p->peak_pos = best_tau;
-    if (min_val < p->tol && best_tau > 0) {
+    if (min_val < p->tol && best_tau > 1 && best_tau < n/2) {
         // Simple quadratic interpolation for sub-sample accuracy
         float s0 = p->yinfft[best_tau-1], s1 = p->yinfft[best_tau], s2 = p->yinfft[best_tau+1];
-        float adj = (s2 - s0) / (2 * (2 * s1 - s0 - s2));
+        // Check divide by 0 errors
+        float denom = 2.0f * (2.0f * s1 - s0 - s2);
+        float adj = (denom != 0.0f) ? (s2 - s0) / denom : 0.0f;
         return (float)p->samplerate / (best_tau + adj);
     }
     return 0.0f;
 }
 
 float pitch_yinfft_get_confidence(pitch_yinfft_t *p) {
-    if (p->peak_pos == 0) return 0;
+    if (!p || p->peak_pos == 0) return 0.0f;
     return 1.0f - p->yinfft[p->peak_pos];
 }
 
 void del_pitch_yinfft(pitch_yinfft_t *p) {
+    if (!p) return;
     free(p->win); free(p->winput); free(p->sqrmag); free(p->yinfft);
     free(p->fft_real); free(p->fft_imag); free(p->weight);
     free(p);
