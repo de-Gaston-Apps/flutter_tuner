@@ -4,8 +4,7 @@ project(flutter_tuner LANGUAGES C CXX)
 add_library(tuner SHARED
         tuner.cpp
         jni_bridge.cpp
-        tuner_wrapper.cpp
-        Yin.c
+        yinfft.c
 )
 
 
