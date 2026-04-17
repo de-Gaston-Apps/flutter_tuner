@@ -4,96 +4,116 @@ import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 
-class Tuner(val callback: (Double) -> Unit) {
+class Tuner(private val callback: (Double) -> Unit) {
 
-    private var isRecording = false
     private var recorder: AudioRecord? = null
-    private var recordingThread: Thread? = null
     private var tunerPtr: Long = 0
+    private var handlerThread: HandlerThread? = null
+    private var handler: Handler? = null
+    private val lock = ReentrantLock()
 
     private external fun createTunerJNI(sampleRate: Int, bufferSize: Int): Long
     private external fun destroyTunerJNI(tunerPtr: Long)
     private external fun findFrequencyJNI(tunerPtr: Long, audioData: DoubleArray): Double
 
-    private fun findFrequency(sigIn: DoubleArray): Double {
-        if (tunerPtr == 0L) return ERROR_FREQUENCY
-        return findFrequencyJNI(tunerPtr, sigIn)
-    }
-
-    private fun collectData(): ShortArray {
-        val sData = ShortArray(BUFFER_SIZE)
-        val shortsRead = recorder!!.read(sData, 0, BUFFER_SIZE)
-        if (shortsRead < 0) {
-            Log.e(TAG, "collectData: Couldn't read from recorder! shortsRead=$shortsRead")
-        }
-        return sData
-    }
-
     @SuppressLint("MissingPermission")
     fun start() {
-        if (isRecording) return
-        Log.d(TAG, "start: Starting tuner")
+        lock.withLock {
+            if (recorder != null) return
+            Log.d(TAG, "start: Starting tuner")
 
-        tunerPtr = createTunerJNI(SAMPLE_RATE, BUFFER_SIZE)
-        if (tunerPtr == 0L) {
-            Log.e(TAG, "Failed to create tuner instance")
-            return
-        }
-
-        recorder = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            SAMPLE_RATE,
-            RECORDER_CHANNELS,
-            RECORDER_AUDIO_ENCODING,
-            BUFFER_SIZE * BYTES_PER_ELEMENT
-        )
-
-        recorder?.startRecording()
-        isRecording = true
-
-        recordingThread = Thread({
-            while (isRecording) {
-                try {
-                    val sData = collectData()
-                    val doubleData = sData.map { it.toDouble() }.toDoubleArray()
-                    val freq = findFrequency(doubleData)
-                    callback(freq)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error: ${e.message}\n Stack: ${e.stackTraceToString()}")
-                    callback(ERROR_FREQUENCY)
-                }
+            tunerPtr = createTunerJNI(SAMPLE_RATE, BUFFER_SIZE)
+            if (tunerPtr == 0L) {
+                Log.e(TAG, "Failed to create tuner instance")
+                return
             }
-        }, "recordingThread")
-        recordingThread?.start()
+
+            val audioRecord = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                SAMPLE_RATE,
+                RECORDER_CHANNELS,
+                RECORDER_AUDIO_ENCODING,
+                BUFFER_SIZE * BYTES_PER_ELEMENT * 2 // Buffer double the size for safety
+            )
+
+            if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
+                Log.e(TAG, "AudioRecord initialization failed")
+                destroyTunerJNI(tunerPtr)
+                tunerPtr = 0
+                audioRecord.release()
+                return
+            }
+
+            handlerThread = HandlerThread("TunerThread")
+            handlerThread?.start()
+            handler = Handler(handlerThread!!.looper)
+
+            audioRecord.setRecordPositionUpdateListener(object : AudioRecord.OnRecordPositionUpdateListener {
+                override fun onMarkerReached(recorder: AudioRecord?) {}
+
+                override fun onPeriodicNotification(recorder: AudioRecord?) {
+                    processAudio()
+                }
+            }, handler)
+
+            audioRecord.setPositionNotificationPeriod(BUFFER_SIZE)
+            audioRecord.startRecording()
+            recorder = audioRecord
+        }
+    }
+
+    private fun processAudio() {
+        lock.withLock {
+            val currentRecorder = recorder
+            val currentTunerPtr = tunerPtr
+            if (currentRecorder == null || currentTunerPtr == 0L) return
+
+            try {
+                val sData = ShortArray(BUFFER_SIZE)
+                val shortsRead = currentRecorder.read(sData, 0, BUFFER_SIZE)
+                if (shortsRead > 0) {
+                    // Always pass a DoubleArray of size BUFFER_SIZE to match original behavior
+                    val doubleData = DoubleArray(BUFFER_SIZE) { sData[it].toDouble() }
+                    val freq = findFrequencyJNI(currentTunerPtr, doubleData)
+                    callback(freq)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in processAudio: ${e.message}")
+                callback(ERROR_FREQUENCY)
+            }
+        }
     }
 
     fun stop() {
-        if (!isRecording) return
-        Log.d(TAG, "stop: Stopping tuner")
-        isRecording = false
+        lock.withLock {
+            if (recorder == null) return
+            Log.d(TAG, "stop: Stopping tuner")
 
-        if (tunerPtr != 0L) {
-            destroyTunerJNI(tunerPtr)
-            tunerPtr = 0
-        }
+            try {
+                recorder?.stop()
+                recorder?.setRecordPositionUpdateListener(null)
+                recorder?.release()
+            } catch (e: Exception) {
+                Log.e(TAG, "stop: Error stopping recorder", e)
+            }
+            recorder = null
 
-        try {
-            recorder?.stop()
-            recorder?.release()
-        } catch (e: Exception) {
-            Log.e(TAG, "stop: Error stopping recorder", e)
-        }
-        recorder = null
+            handlerThread?.quitSafely()
+            handlerThread = null
+            handler = null
 
-        try {
-            recordingThread?.join()
-        } catch (e: InterruptedException) {
-            Log.e(TAG, "stop: Thread join interrupted", e)
+            if (tunerPtr != 0L) {
+                destroyTunerJNI(tunerPtr)
+                tunerPtr = 0
+            }
         }
-        recordingThread = null
     }
 
     companion object {
@@ -109,14 +129,4 @@ class Tuner(val callback: (Double) -> Unit) {
             System.loadLibrary("tuner")
         }
     }
-}
-
-
-/* ------------------------------------------------------------------------
-   com.degastonapps.flutter_tuner.NoiseLevels object mirrors your dart noise_levels import.
-   Replace values with your project's constants.
-   ------------------------------------------------------------------------ */
-object NoiseLevels {
-    // Example value. Set to the constant you use in Dart.
-    const val NOISE_SENSE_VERY_HIGH: Double = 25.0
 }
