@@ -16,9 +16,9 @@ class Tuner(val callback: (Double) -> Unit) {
 
     private external fun createTunerJNI(sampleRate: Int, bufferSize: Int): Long
     private external fun destroyTunerJNI(tunerPtr: Long)
-    private external fun findFrequencyJNI(tunerPtr: Long, audioData: DoubleArray): Double
+    private external fun findFrequencyJNI(tunerPtr: Long, audioData: ShortArray): Double
 
-    private fun findFrequency(sigIn: DoubleArray): Double {
+    private fun findFrequency(sigIn: ShortArray): Double {
         if (tunerPtr == 0L) return ERROR_FREQUENCY
         return findFrequencyJNI(tunerPtr, sigIn)
     }
@@ -58,8 +58,7 @@ class Tuner(val callback: (Double) -> Unit) {
             while (isRecording) {
                 try {
                     val sData = collectData()
-                    val doubleData = sData.map { it.toDouble() }.toDoubleArray()
-                    val freq = findFrequency(doubleData)
+                    val freq = findFrequency(sData)
                     callback(freq)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error: ${e.message}\n Stack: ${e.stackTraceToString()}")
