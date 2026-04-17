@@ -18,7 +18,7 @@ class Tuner {
 
     static let errorFrequency = -1.0
 
-    private var fftBuffer = [Double]()
+    private var fftBuffer = [Float]()
 
     private var tunerBridge: TunerBridge?
     private var audioEngine = AVAudioEngine()
@@ -106,10 +106,8 @@ class Tuner {
 
             let frameLength = Int(buffer.frameLength)
 
-            // Append new samples
-            for i in 0..<frameLength {
-                self.fftBuffer.append(Double(channelData[i]))
-            }
+            // Append new samples efficiently
+            self.fftBuffer.append(contentsOf: UnsafeBufferPointer(start: channelData, count: frameLength))
 
             // Cap growth: if buffer exceeds maxBufferSamples, drop oldest samples
             if self.fftBuffer.count > Tuner.maxBufferSamples {
@@ -123,15 +121,12 @@ class Tuner {
 
             // Process as many full windows as are available
             while self.fftBuffer.count >= Tuner.fftSize {
-                let window = Array(self.fftBuffer.prefix(Tuner.fftSize))
+                let frequency = self.fftBuffer.withUnsafeBufferPointer { ptr -> Double in
+                    return bridge.findFrequency(ptr.baseAddress!, length: Int32(Tuner.fftSize))
+                }
                 self.fftBuffer.removeFirst(Tuner.fftSize)
 
-                let frequency = self.tunerBridge?.findFrequency(
-                    window,
-                    length: Int32(Tuner.fftSize)
-                )
-
-                self.callback(frequency ?? Tuner.errorFrequency)
+                self.callback(frequency)
             }
         }
 
