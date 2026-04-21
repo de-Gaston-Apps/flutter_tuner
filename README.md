@@ -1,4 +1,4 @@
-# flutter_tuner
+# Flutter Tuner
 
 [![CI](https://github.com/Jonny5-5/flutter_tuner/actions/workflows/ci.yml/badge.svg)](https://github.com/Jonny5-5/flutter_tuner/actions/workflows/ci.yml)
 
