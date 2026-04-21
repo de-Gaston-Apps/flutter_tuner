@@ -1,6 +1,5 @@
 #include <jni.h>
 #include "tuner.h"
-#include <vector>
 
 extern "C" {
 
@@ -17,19 +16,18 @@ Java_com_degastonapps_flutter_1tuner_Tuner_destroyTunerJNI(JNIEnv *env, jobject 
 }
 
 JNIEXPORT jdouble JNICALL
-Java_com_degastonapps_flutter_1tuner_Tuner_findFrequencyJNI(JNIEnv *env, jobject thiz, jlong tuner_ptr, jdoubleArray audio_data) {
+Java_com_degastonapps_flutter_1tuner_Tuner_findFrequencyJNI(JNIEnv *env, jobject thiz, jlong tuner_ptr, jshortArray audio_data) {
     auto* tuner = reinterpret_cast<TunerCPP*>(tuner_ptr);
     if (!tuner) {
         return -1.0;
     }
 
-    jdouble *audio_data_ptr = env->GetDoubleArrayElements(audio_data, nullptr);
+    jshort *audio_data_ptr = env->GetShortArrayElements(audio_data, nullptr);
     int len = env->GetArrayLength(audio_data);
-    std::vector<double> audio_data_vec(audio_data_ptr, audio_data_ptr + len);
 
-    double freq = tuner->findFrequency(audio_data_vec);
+    double freq = tuner->findFrequency(reinterpret_cast<const int16_t*>(audio_data_ptr), len);
 
-    env->ReleaseDoubleArrayElements(audio_data, audio_data_ptr, 0);
+    env->ReleaseShortArrayElements(audio_data, audio_data_ptr, JNI_ABORT);
 
     return freq;
 }

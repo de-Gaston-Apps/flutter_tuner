@@ -11,37 +11,26 @@ void main() {
   final List<MethodCall> log = <MethodCall>[];
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (MethodCall methodCall) async {
-        log.add(methodCall);
-        return null;
-      },
-    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+          log.add(methodCall);
+          return null;
+        });
   });
 
   tearDown(() {
     log.clear();
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
   test('startTuning', () async {
     await platform.startTuning();
-    expect(
-      log,
-      <Matcher>[
-        isMethodCall('startTuning', arguments: null),
-      ],
-    );
+    expect(log, <Matcher>[isMethodCall('startTuning', arguments: null)]);
   });
 
   test('stopTuning', () async {
     await platform.stopTuning();
-    expect(
-      log,
-      <Matcher>[
-        isMethodCall('stopTuning', arguments: null),
-      ],
-    );
+    expect(log, <Matcher>[isMethodCall('stopTuning', arguments: null)]);
   });
 }

@@ -4,6 +4,7 @@
 #ifdef __cplusplus
 
 #include <vector>
+#include <cstdint>
 
 // Forward declaration of the C struct to keep the header clean
 struct _pitch_yinfft_t;
@@ -25,16 +26,25 @@ public:
 
     /**
      * Processes a block of audio data to find the fundamental frequency.
-     * @param audioData Vector of double samples from the microphone
+     * @param audioData Pointer to float samples
+     * @param length Number of samples
      * @return The detected frequency in Hz, -2.0 for silence/noise, or -1.0 for error
      */
-    double findFrequency(const std::vector<double> &audioData);
+    double findFrequency(const float *audioData, int length);
+
+    /**
+     * Processes a block of audio data to find the fundamental frequency.
+     * @param audioData Pointer to 16-bit PCM samples
+     * @param length Number of samples
+     * @return The detected frequency in Hz, -2.0 for silence/noise, or -1.0 for error
+     */
+    double findFrequency(const int16_t *audioData, int length);
 
 private:
     // Opaque pointer to the C pitch detector instance
     pitch_yinfft_t *tunerPtr;
 
-    // Internal buffer used to convert double input to float for processing
+    // Internal buffer used to convert int16_t input to float for processing
     std::vector<float> floatBuffer;
 };
 

@@ -21,7 +21,7 @@ class Tuner(private val callback: (Double) -> Unit) {
 
     private external fun createTunerJNI(sampleRate: Int, bufferSize: Int): Long
     private external fun destroyTunerJNI(tunerPtr: Long)
-    private external fun findFrequencyJNI(tunerPtr: Long, audioData: DoubleArray): Double
+    private external fun findFrequencyJNI(tunerPtr: Long, audioData: ShortArray): Double
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -79,9 +79,7 @@ class Tuner(private val callback: (Double) -> Unit) {
                 val sData = ShortArray(BUFFER_SIZE)
                 val shortsRead = currentRecorder.read(sData, 0, BUFFER_SIZE)
                 if (shortsRead > 0) {
-                    // Always pass a DoubleArray of size BUFFER_SIZE to match original behavior
-                    val doubleData = DoubleArray(BUFFER_SIZE) { sData[it].toDouble() }
-                    val freq = findFrequencyJNI(currentTunerPtr, doubleData)
+                    val freq = findFrequencyJNI(currentTunerPtr, sData)
                     callback(freq)
                 }
             } catch (e: Exception) {
