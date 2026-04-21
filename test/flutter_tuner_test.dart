@@ -7,14 +7,21 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 class MockFlutterTunerPlatform
     with MockPlatformInterfaceMixin
     implements FlutterTunerPlatform {
-  @override
-  Future<void> startTuning() => Future.value();
+  bool startTuningCalled = false;
+  bool stopTuningCalled = false;
 
   @override
-  Future<void> stopTuning() => Future.value();
+  Future<void> startTuning() async {
+    startTuningCalled = true;
+  }
 
   @override
-  Stream<double> get frequencyStream => const Stream.empty();
+  Future<void> stopTuning() async {
+    stopTuningCalled = true;
+  }
+
+  @override
+  Stream<double> get frequencyStream => Stream.empty();
 }
 
 void main() {
@@ -30,5 +37,15 @@ void main() {
     FlutterTunerPlatform.instance = fakePlatform;
 
     await flutterTunerPlugin.startTuning();
+    expect(fakePlatform.startTuningCalled, true);
+  });
+
+  test('stopTuning', () async {
+    FlutterTuner flutterTunerPlugin = FlutterTuner();
+    MockFlutterTunerPlatform fakePlatform = MockFlutterTunerPlatform();
+    FlutterTunerPlatform.instance = fakePlatform;
+
+    await flutterTunerPlugin.stopTuning();
+    expect(fakePlatform.stopTuningCalled, true);
   });
 }

@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  cpp-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential
+      - name: Build and run C++ tests
+        run: |
+          cd ios/Classes/cpp
+          cmake -S . -B build
+          cmake --build build
+          ./build/tuner_test
+
+  # flutter-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: 'stable'
+  #     - name: Install dependencies
+  #       run: flutter pub get
+  #     - name: Run Flutter unit tests
+  #       run: flutter test
+
+  # build-android:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: 'stable'
+  #     - uses: actions/setup-java@v4
+  #       with:
+  #         distribution: 'zulu'
+  #         java-version: '17'
+  #     - name: Build Android APK
+  #       run: |
+  #         cd example
+  #         flutter build apk --debug
+
+  # build-ios:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: 'stable'
+  #     - name: Build iOS
+  #       run: |
+  #         cd example
+  #         flutter build ios --no-codesign
