@@ -1,18 +1,29 @@
 # flutter_tuner
 
-A new Flutter plugin project.
+[![CI](https://github.com/Jonny5-5/flutter_tuner/actions/workflows/ci.yml/badge.svg)](https://github.com/Jonny5-5/flutter_tuner/actions/workflows/ci.yml)
 
-## Getting Started
+flutter_tuner is a high-performance Flutter plugin for real-time audio frequency detection and tuning. It utilizes a shared C++ core implementation based on the YINFFT algorithm to provide exceptional accuracy and performance across both Android and iOS platforms. This project was developed to provide a robust, cross-platform solution for building musical instrument tuners and other audio analysis applications that require reliable pitch estimation with minimal overhead.
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/to/develop-plugins),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+## Developer Pages
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [Google Play Store](https://play.google.com/store/apps/dev?id=8230997084127446105)
+- [Apple App Store](https://apps.apple.com/us/developer/jonathan-de-gaston/id1656029142)
 
-The plugin project was generated without specifying the `--platforms` flag, no platforms are currently supported.
-To add platforms, run `flutter create -t plugin --platforms <platforms> .` in this directory.
-You can also find a detailed instruction on how to add platforms in the `pubspec.yaml` at https://flutter.dev/to/pubspec-plugin-platforms.
+## Usage
+
+Check out the [example code](https://github.com/Jonny5-5/flutter_tuner/blob/main/example/lib/main.dart) for a full implementation.
+
+```dart
+final flutterTuner = FlutterTuner();
+
+// Start tuning
+await flutterTuner.startTuning();
+
+// Listen to frequency updates
+flutterTuner.frequencyStream.listen((frequency) {
+  print('Detected frequency: $frequency Hz');
+});
+
+// Stop tuning
+await flutterTuner.stopTuning();
+```
