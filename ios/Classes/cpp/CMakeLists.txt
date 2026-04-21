@@ -19,15 +19,5 @@ endif()
 
 target_include_directories(tuner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Test executable (without jni_bridge.cpp to avoid JNI dependency)
-add_executable(tuner_test
-        tuner_test.cpp
-        tuner.cpp
-        yinfft.c
-)
-
-target_include_directories(tuner_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-if(UNIX AND NOT APPLE)
-    target_link_libraries(tuner_test PRIVATE m)
-endif()
+# Tests have been moved to cpp_tests/ at the project root.
+# See cpp_tests/CMakeLists.txt for the test build configuration.

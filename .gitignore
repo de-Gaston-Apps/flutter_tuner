@@ -31,3 +31,7 @@ migrate_working_dir/
 .flutter-plugins
 .flutter-plugins-dependencies
 build/
+
+# C++ test artifacts — keep WAV fixtures and build output out of the package
+cpp_tests/build/
+cpp_tests/fixtures/*.wav
