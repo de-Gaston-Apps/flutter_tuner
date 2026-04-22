@@ -117,7 +117,7 @@ pitch_yinfft_t *new_pitch_yinfft(int samplerate, int bufsize) {
         return NULL;
     }
     
-    p->tol = 0.85f;
+    p->tol = 0.15f;
 
     // Hanning Window
     for (int i = 0; i < bufsize; i++) p->win[i] = 0.5 * (1 - cos(2 * PI * i / (bufsize - 1)));
@@ -167,30 +167,43 @@ float pitch_yinfft_do(pitch_yinfft_t *p, const float *input) {
     simple_fft(p->fft_real, p->fft_imag, n);
 
     p->yinfft[0] = 1.0f;
-    int best_tau = 0;
-    float min_val = 1000.0f;
 
+    // 1. Calculate the entire YIN difference function first
     for (int tau = 1; tau < n / 2 + 1; tau++) {
         p->yinfft[tau] = sum - p->fft_real[tau];
         tmp += p->yinfft[tau];
         if (tmp != 0) p->yinfft[tau] *= (float)tau / tmp;
         else p->yinfft[tau] = 1.0f;
+    }
 
-        if (p->yinfft[tau] < min_val) {
-            min_val = p->yinfft[tau];
+    // 2. Search for the FIRST valley that drops below the tolerance
+    int best_tau = 0;
+    for (int tau = 1; tau < n / 2; tau++) {
+        if (p->yinfft[tau] < p->tol) {
+            // We found a dip below the threshold!
+            // Now, step forward to find the absolute bottom of THIS specific valley.
+            while (tau + 1 < n / 2 && p->yinfft[tau + 1] < p->yinfft[tau]) {
+                tau++;
+            }
             best_tau = tau;
+            break; // WE FOUND THE FUNDAMENTAL. STOP SEARCHING!
         }
     }
 
     p->peak_pos = best_tau;
-    if (min_val < p->tol && best_tau > 1 && best_tau < n/2) {
+
+    // 3. Sub-sample interpolation and return
+    if (best_tau > 1 && best_tau < n / 2) {
         // Simple quadratic interpolation for sub-sample accuracy
         float s0 = p->yinfft[best_tau-1], s1 = p->yinfft[best_tau], s2 = p->yinfft[best_tau+1];
-        // Check divide by 0 errors
+
+        // Prevent divide by zero
         float denom = 2.0f * (2.0f * s1 - s0 - s2);
         float adj = (denom != 0.0f) ? (s2 - s0) / denom : 0.0f;
+
         return (float)p->samplerate / (best_tau + adj);
     }
+
     return 0.0f;
 }
 
